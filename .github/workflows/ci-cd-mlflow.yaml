@@ -1,0 +1,40 @@
+name: MLflow CI/CD with AI Agent
+
+on:
+  push:
+    paths:
+      - 'scripts/**'
+      - 'agents/**'
+      - 'requirements.txt'
+
+jobs:
+  train-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Train model and log to MLflow
+      run: |
+        python scripts/train_model.py
+
+    - name: AI Agent - Select best model
+      run: |
+        python agents/model_selector_agent.py
+
+    - name: Notify if failed
+      if: failure()
+      run: |
+        curl -X POST https://hooks.zapier.com/hooks/catch/your_zap_id \
+          -H "Content-Type: application/json" \
+          -d "{\"message\": \"Pipeline failed at some step. Check logs.\"}"
